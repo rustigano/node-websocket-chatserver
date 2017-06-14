@@ -1,0 +1,28 @@
+{
+  "name": "socketserver",
+  "version": "1.0.0",
+  "description": "Socketserver voor heroku",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tobiasbeuving/socketserver.git"
+  },
+  "keywords": [
+    "socketserver",
+    "nodejs",
+    "heroku"
+  ],
+  "author": "Tobias Beuving",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tobiasbeuving/socketserver/issues"
+  },
+  "homepage": "https://github.com/tobiasbeuving/socketserver#readme",
+  "dependencies": {
+    "nodejs-websocket": "^1.7.1",
+    "ws": "^3.0.0"
+  }
+}
