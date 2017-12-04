@@ -1,7 +1,7 @@
 # Websocket chat server
 
 ---
-@todo : For use with vue chat ....
+> Use it with the chatclient here: https://github.com/tobiasbeuving/vue-websocket-chat-client
 ---
  
 ###Installation:
