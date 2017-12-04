@@ -1,7 +1,7 @@
 {
-  "name": "socketserver",
-  "version": "1.5.0",
-  "description": "Socketserver",
+  "name": "Node websocket chat server",
+  "version": "1.0.0",
+  "description": "Node.js chat server for JavaScript Clients using Websockets",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tobiasbeuving/socketserver.git"
+    "url": "git+https://github.com/tobiasbeuving/node-websocket-chatserver.git"
   },
   "keywords": [
     "socketserver",
@@ -19,9 +19,9 @@
   "author": "Tobias Beuving",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/tobiasbeuving/socketserver/issues"
+    "url": "https://github.com/tobiasbeuving/node-websocket-chatserver/issues"
   },
-  "homepage": "https://github.com/tobiasbeuving/socketserver#readme",
+  "homepage": "https://github.com/tobiasbeuving/node-websocket-chatserver#readme",
   "babel": {
     "presets": [
       "es2015"
