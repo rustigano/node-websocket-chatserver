@@ -1,5 +1,5 @@
 {
-  "name": "Node-websocket-chat-server",
+  "name": "websocket-chat-server",
   "version": "1.0.0",
   "description": "Node.js chat server for JavaScript Clients using Websockets",
   "main": "index.js",
