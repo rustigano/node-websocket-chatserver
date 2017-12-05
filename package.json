@@ -1,5 +1,5 @@
 {
-  "name": "Node websocket chat server",
+  "name": "Node-websocket-chat-server",
   "version": "1.0.0",
   "description": "Node.js chat server for JavaScript Clients using Websockets",
   "main": "index.js",
@@ -31,15 +31,5 @@
     "nodejs-websocket": "^1.7.1",
     "ws": "^3.0.0"
   },
-  "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
-    "babel-preset-es2015": "^6.24.1",
-    "del": "^3.0.0",
-    "gulp": "^3.9.1",
-    "gulp-babel": "^7.0.0",
-    "gulp-concat": "^2.6.1",
-    "gulp-sourcemaps": "^2.6.1",
-    "gulp-uglify": "^3.0.0"
-  }
+  "devDependencies": {}
 }
