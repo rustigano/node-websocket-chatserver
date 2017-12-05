@@ -21,10 +21,11 @@ console.log('*** Server gestart ***')
 
 var userList = new UserList()
 
+// username is passed in
+// the connection URL: ws://localhost:3001/?username=henkie
 function getUsernameFromURL(conn) {
     var urlObj = url.parse(conn.path, true)
     var username = urlObj.query.username
-    // console.log('Username', username);
     return username
 }
 
@@ -36,11 +37,9 @@ function socketConnection(conn) {
     // Add the new user to the userlist
     userList.addUser(conn.key, username)
 
-    console.log('*** ' + username + ' connected', conn.key)
+    console.log(`*** ${username} connected, key: ${conn.key}`)
 
-    // Flatten the userlist so it can be sent back to the user:
-    var users = userList.flattenUserList()
-    var message = createMessage('', 'connect', {'key': conn.key, 'users': users})
+    var message = createMessage('', 'connect', {'key': conn.key, 'users': userList.users})
 
     // send the 'key' and the userlist back to the client,
     // when that is done, notify the other connected
@@ -77,7 +76,7 @@ function socketConnection(conn) {
                 if (u) {
                     u.username = messageObject.data.username
                 }
-                console.log('set-username', u.username)
+                console.log(`set-username: ${u.username}`)
                 break
 
             case 'pos':
@@ -86,11 +85,10 @@ function socketConnection(conn) {
                     u.x = messageObject.data.x
                     u.y = messageObject.data.y
                 }
-                console.log('set-pos', u.x, u.y)
+                console.log(`set-pos: ${u.x}, ${u.y}`)
                 break
 
             case 'msg':
-                // console.log('messageObject.data.whisperTo', messageObject.data.whisperTo)
                 if (messageObject.data.whisperTo !== undefined) isWhispering = true
                 break
             case 'client-ping':
@@ -118,7 +116,12 @@ function socketConnection(conn) {
         })
     })
 
-
+    /**
+     * @todo implement client server transfer agreement/handshake
+     * and send not only the filecontents but also the filename
+     * for now every file will be written to henk.jpg
+     * this file will be overwritten everytime a new file is received
+     */
     conn.on('binary', function (inStream) {
         // Empty buffer for collecting binary data
         var data = new Buffer(0)
@@ -129,7 +132,7 @@ function socketConnection(conn) {
                 data = Buffer.concat([data, newData], data.length + newData.length)
         })
         inStream.on('end', function () {
-            console.log("Received " + data.length + " bytes of binary data")
+            console.log(`Received ${data.length} bytes of binary data`)
             writeFile('henk.jpg', data)
             // process_my_data(data)
         })
@@ -137,25 +140,26 @@ function socketConnection(conn) {
 
     function writeFile(filename, data) {
 
-        console.log('dirname', __dirname)
+        console.log(`dirname: ${__dirname}`)
 
         // The absolute path of the new file with its name
         var filepath = 'transfers/' + filename
 
         fs.writeFile(filepath, data, (err) => {
             if (err) throw err;
-
-            console.log("The file was succesfully saved!");
+            console.log('The file was succesfully saved!')
         });
 
     }
 
-    // @todo actie ondernemen wanneer er
-    // geen pong terugkomt omdat de user te beroerde latency heeft
-    // of disconnected is.
-    // - Notify andere users,
-    // - Disconnect,
-    // - verwijder user uit userList
+    /**
+     * @todo actie ondernemen wanneer er
+     * geen pong terugkomt omdat de user te beroerde latency heeft
+     * of disconnected is.
+     * - Notify andere users,
+     * - Disconnect,
+     * - verwijder user uit userList
+     */
     conn.on('pong', function (e) {
         console.log('*** pong ***')
     })
@@ -172,7 +176,7 @@ function socketConnection(conn) {
                 break
 
         }
-        console.log('Connection closed', code, reason, this.key);
+        console.log(`Connection closed. Code: ${code} reason:${reason} key: ${this.key}`)
 
         message = createMessage(conn.key, 'disconnect', {})
 

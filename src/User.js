@@ -6,14 +6,4 @@ module.exports = class User {
         this.x = 0
         this.y = 0
     }
-    getObjectLiteral (u) {
-        return {
-            'id': this.id,
-            'username': this.username,
-            'x': this.x,
-            'y': this.y,
-            'avatar': this.avatar
-        }
-    }
 }
-// module.exports = User
