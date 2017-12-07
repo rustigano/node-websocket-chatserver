@@ -1,6 +1,6 @@
 var User = require('./User')
 
-module.exports = class UserList {
+module.exports = class UserController {
 
     constructor() {
         this.users = []

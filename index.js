@@ -1,9 +1,9 @@
 const url = require('url');
 const fs = require('fs');
 const ws = require('nodejs-websocket'); //
-const UserList = require('./src/UserList')
-
 var server = ws.createServer(socketConnection).listen(3001);
+
+const UserController = require('./src/UserController')
 
 // Set up server ping pong
 // each 30 secs ping clients and listen for pong response
@@ -19,7 +19,7 @@ setInterval(function ping() {
 
 console.log('*** Server gestart ***')
 
-var userList = new UserList()
+var userController = new UserController()
 
 // username is passed in
 // the connection URL: ws://localhost:3001/?username=henkie
@@ -35,11 +35,11 @@ function socketConnection(conn) {
     var username = getUsernameFromURL(conn)
 
     // Add the new user to the userlist
-    userList.addUser(conn.key, username)
+    userController.addUser(conn.key, username)
 
     console.log(`*** ${username} connected, key: ${conn.key}`)
 
-    var message = createMessage('', 'connect', {'key': conn.key, 'users': userList.users})
+    var message = createMessage('', 'connect', {'key': conn.key, 'users': userController.users})
 
     // send the 'key' and the userlist back to the client,
     // when that is done, notify the other connected
@@ -66,13 +66,13 @@ function socketConnection(conn) {
         var isWhispering = false
         switch (messageObject.type) {
             case 'set-avatar':
-                var u = userList.findUser(conn.key)
+                var u = userController.findUser(conn.key)
                 if (u) {
                     u.avatar = messageObject.data.image
                 }
                 break
             case 'set-username':
-                var u = userList.findUser(conn.key)
+                var u = userController.findUser(conn.key)
                 if (u) {
                     u.username = messageObject.data.username
                 }
@@ -80,7 +80,7 @@ function socketConnection(conn) {
                 break
 
             case 'pos':
-                var u = userList.findUser(conn.key)
+                var u = userController.findUser(conn.key)
                 if (u) {
                     u.x = messageObject.data.x
                     u.y = messageObject.data.y
@@ -158,7 +158,7 @@ function socketConnection(conn) {
      * of disconnected is.
      * - Notify andere users,
      * - Disconnect,
-     * - verwijder user uit userList
+     * - verwijder user uit userController
      */
     conn.on('pong', function (e) {
         console.log('*** pong ***')
@@ -180,7 +180,7 @@ function socketConnection(conn) {
 
         message = createMessage(conn.key, 'disconnect', {})
 
-        userList.removeUser(conn.key)
+        userController.removeUser(conn.key)
 
         server.connections.forEach(function (eachConn) {
             eachConn.sendText(message, function (e) {
