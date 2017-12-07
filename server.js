@@ -64,28 +64,21 @@ function socketConnection(conn) {
 
         var messageObject = JSON.parse(msg)
         var isWhispering = false
+        var passMessageToOtherClients = true
+
         switch (messageObject.type) {
             case 'set-avatar':
-                var u = userController.findUser(conn.key)
-                if (u) {
-                    u.avatar = messageObject.data.image
-                }
+                userController.changeProp(conn.key, 'avatar', messageObject.data.image)
                 break
             case 'set-username':
-                var u = userController.findUser(conn.key)
-                if (u) {
-                    u.username = messageObject.data.username
-                }
-                console.log(`set-username: ${u.username}`)
+                userController.changeProp(conn.key, 'username', messageObject.data.username)
+                console.log(`set-username: ${messageObject.data.username}`)
                 break
 
             case 'pos':
-                var u = userController.findUser(conn.key)
-                if (u) {
-                    u.x = messageObject.data.x
-                    u.y = messageObject.data.y
-                }
-                console.log(`set-pos: ${u.x}, ${u.y}`)
+                userController.changeProp(conn.key, 'x', messageObject.data.x)
+                userController.changeProp(conn.key, 'y', messageObject.data.y)
+                // console.log(`set-pos: ${messageObject.data.x}, ${messageObject.data.y}`)
                 break
 
             case 'msg':
@@ -93,13 +86,14 @@ function socketConnection(conn) {
                 break
             case 'client-ping':
                 conn.sendText(createMessage(conn.key, 'server-pong', {}))
-                // exit this routine:
-                return
+                passMessageToOtherClients = false
                 break
 
             default:
                 break
         }
+
+        if (!passMessageToOtherClients) return
 
         messageObject.sender = conn.key
 
@@ -114,6 +108,7 @@ function socketConnection(conn) {
             }
 
         })
+
     })
 
     /**

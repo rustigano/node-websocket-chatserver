@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon",
-    "start": "node index.js",
+    "start": "node server.js",
     "test": "echo geen test geconfigureerd"
   },
   "repository": {
