@@ -22,9 +22,7 @@ module.exports = class UserController {
     }
 
     findUser(id) {
-        return this.users.find(function (u) {
-            return u.id == id
-        });
+        return this.users.find(u => u.id === id)
     }
 
     findUserIndex(id) {
@@ -32,10 +30,10 @@ module.exports = class UserController {
     }
 
     userExists(id) {
-        return !(this.findUserIndex(id) === -1)
+        return (this.findUserIndex(id) !== -1)
     }
 
-    userChange(id, prop, value) {
+    changeProp(id, prop, value) {
         var u = this.findUser(id)
         if (u) u[prop] = value
     }
