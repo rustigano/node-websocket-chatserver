@@ -1,9 +1,12 @@
-const url = require('url');
-const fs = require('fs');
-const ws = require('nodejs-websocket'); //
-var server = ws.createServer(socketConnection).listen(3001);
+const url = require('url')
+const events = require('events')
+const fs = require('fs')
+const ws = require('nodejs-websocket')
 
-const UserController = require('./src/UserController')
+const UserController = require('./UserController')
+const RoomController = require('./RoomController')
+
+var server = ws.createServer(socketConnection).listen(3001)
 
 // Set up server ping pong
 // each 30 secs ping clients and listen for pong response
@@ -20,6 +23,47 @@ setInterval(function ping() {
 console.log('*** Server gestart ***')
 
 var userController = new UserController()
+var roomController = new RoomController()
+
+roomController.on('userTransferredEvent', function (userId, sourceRoomId, destinationRoomId) {
+    console.log('user has been transferred', userId, sourceRoomId, destinationRoomId)
+
+    // notify users in sourceRoom that the user has left the room
+    let leaveMsg = createMessage(userId, 'leaves-room', {})
+    sendMessageToClientsInRoom(leaveMsg, sourceRoomId)
+
+    // notify users in destinationRoom (including the transferred user) that the user joined the room
+    let user = userController.findUser(userId)
+    let destinationRoom = roomController.getRoomById(destinationRoomId)
+    let roomUsers = userController.getUsersById(destinationRoom.users)
+    let enterMsg = createMessage(userId, 'enters-room', {'user': user, 'roomId': destinationRoomId, 'users': roomUsers})
+    sendMessageToClientsInRoom(enterMsg, destinationRoomId)
+})
+
+function sendMessageToAllClients(msgString) {
+    server.connections.forEach(function (eachConn) {
+        eachConn.sendText(msgString)
+    })
+}
+function sendMessageToAListOfClients(msgString, ids) {
+    if (!Array.isArray(ids)) {
+        throw new Error('ids should be an array')
+    }
+    ids.forEach((id) => {
+        let targetConn = server.connections.find(conn => conn.key === id)
+        if (targetConn !== undefined) targetConn.sendText(msgString)
+    })
+}
+function sendMessageToClientsInRoom(msgString, roomId) {
+    // console.log('msgString', msgString)
+    let room = roomController.getRoomById(roomId)
+    sendMessageToAListOfClients(msgString, room.users)
+}
+function sendMessageToClient(msgString, clientId) {
+    let targetConn = server.connections.find(conn => conn.key === clientId)
+    if (targetConn !== undefined) targetConn.sendText(msgString)
+}
+
 
 // username is passed in
 // the connection URL: ws://localhost:3001/?username=henkie
@@ -31,30 +75,35 @@ function getUsernameFromURL(conn) {
 
 function socketConnection(conn) {
 
-    // Parse the username from the new user from the server URL:
+    // New user, parse the username from the connection URL:
     var username = getUsernameFromURL(conn)
 
     // Add the new user to the userlist
     userController.addUser(conn.key, username)
+    // Add the user to the main room:
+    roomController.addUser(conn.key, 1)
 
     console.log(`*** ${username} connected, key: ${conn.key}`)
 
-    var message = createMessage('', 'connect', {'key': conn.key, 'users': userController.users})
+    var mainRoom = roomController.getRoomById(1)
+    var mainRoomUsers = userController.getUsersById(mainRoom.users)
 
-    // send the 'key' and the userlist back to the client,
-    // when that is done, notify the other connected
+    var message = createMessage('', 'connect', {
+        'key': conn.key,
+        'users': mainRoomUsers,
+        'rooms': roomController.rooms,
+        'room': mainRoom
+    })
+
+    // Send the users' 'key' and the userlist back to the client.
+    // When that is done, notify the other connected
     // users about the newly connected user.
 
     conn.sendText(message, function (e) {
-        // console.log(e)
 
-        // notify other connected clients about the newly connected user:
+        // notify other connected clients in the main room about the newly connected user:
         var notificationMsg = createMessage(conn.key, 'new-user', {'username': username})
-        server.connections.forEach(function (eachConn) {
-            eachConn.sendText(notificationMsg, function (e) {
-                // console.log(e)
-            })
-        })
+        sendMessageToClientsInRoom(notificationMsg, 1)
 
     })
 
@@ -63,12 +112,15 @@ function socketConnection(conn) {
         // console.log('Received: ', msg);
 
         var messageObject = JSON.parse(msg)
-        var isWhispering = false
-        var passMessageToOtherClients = true
+        // var isWhispering = false
+        // var passMessageToOtherClients = true
+        messageObject.sender = conn.key
+        const roomId = roomController.findCurrentRoom(conn.key)
 
         switch (messageObject.type) {
             case 'set-avatar':
                 userController.changeProp(conn.key, 'avatar', messageObject.data.image)
+                sendMessageToClientsInRoom(JSON.stringify(messageObject), roomId)
                 break
             case 'set-username':
                 userController.changeProp(conn.key, 'username', messageObject.data.username)
@@ -78,36 +130,42 @@ function socketConnection(conn) {
             case 'pos':
                 userController.changeProp(conn.key, 'x', messageObject.data.x)
                 userController.changeProp(conn.key, 'y', messageObject.data.y)
+                sendMessageToClientsInRoom(JSON.stringify(messageObject), roomId)
                 // console.log(`set-pos: ${messageObject.data.x}, ${messageObject.data.y}`)
                 break
 
             case 'msg':
-                if (messageObject.data.whisperTo !== undefined) isWhispering = true
+                if (messageObject.data.whisperTo === undefined) {
+                    // sendMessageToAllClients(messageObject)
+                    sendMessageToClientsInRoom(JSON.stringify(messageObject), roomId)
+                } else {
+                    // send the whispered message only to the target user and the sender of the message
+                    sendMessageToAListOfClients( JSON.stringify(messageObject), [messageObject.data.whisperTo, conn.key])
+                }
                 break
+
+            case 'create-room':
+                let newRoomId = roomController.createRoom(conn.key, messageObject.data.name)
+                // roomController.changeProp(newRoomId, 'backgroundColor', 'purple')
+                // console.log('roomid', newRoomId)
+                let newRoom = roomController.getRoomById(newRoomId)
+                messageObject.data['room'] = newRoom
+                // console.log('newRoom', newRoom)
+                sendMessageToAllClients(JSON.stringify(messageObject))
+                break
+
+            case 'move-to-room':
+                // roomController fires event on successful transfer
+                roomController.moveToRoom(conn.key, messageObject.data.id)
+                break
+
             case 'client-ping':
                 conn.sendText(createMessage(conn.key, 'server-pong', {}))
-                passMessageToOtherClients = false
                 break
 
             default:
                 break
         }
-
-        if (!passMessageToOtherClients) return
-
-        messageObject.sender = conn.key
-
-        server.connections.forEach(function (eachConn) {
-            if (isWhispering) {
-                if (messageObject.data.whisperTo == eachConn.key || eachConn.key == messageObject.sender) {
-                    eachConn.sendText(JSON.stringify(messageObject))
-                    console.log('whispered to somebody...')
-                }
-            } else {
-                eachConn.sendText(JSON.stringify(messageObject))
-            }
-
-        })
 
     })
 
@@ -176,6 +234,7 @@ function socketConnection(conn) {
         message = createMessage(conn.key, 'disconnect', {})
 
         userController.removeUser(conn.key)
+        roomController.removeUserEverywhere(conn.key)
 
         server.connections.forEach(function (eachConn) {
             eachConn.sendText(message, function (e) {
@@ -201,5 +260,5 @@ function socketConnection(conn) {
 
 
 function createMessage(sender, type, content) {
-    return JSON.stringify({'sender': sender, 'type': type, 'data': content, 'date': new Date()})
+    return JSON.stringify({'sender': sender, 'type': type, 'data': content})
 }
