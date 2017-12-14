@@ -1,7 +1,9 @@
 # node.js Websocket chat server
 
 ---
-> Use it with the chatclient here: https://github.com/tobiasbeuving/vue-websocket-chat-client
+> Use it with this chat-client over here: https://github.com/tobiasbeuving/vue-websocket-chat-client
+
+> Check the [readme for the features](https://github.com/tobiasbeuving/vue-websocket-chat-client/blob/master/README.md)
 ---
  
 ### Installation:
