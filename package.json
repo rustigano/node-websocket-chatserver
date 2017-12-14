@@ -2,11 +2,11 @@
   "name": "websocket-chat-server",
   "version": "1.0.0",
   "description": "Node.js chat server for JavaScript Clients using Websockets",
-  "main": "server.js",
+  "main": "src/server.js",
   "scripts": {
     "dev": "nodemon",
-    "start": "node server.js",
-    "test": "echo geen test geconfigureerd"
+    "start": "node src/server.js",
+    "test": "./node_modules/.bin/mocha --reporter spec"
   },
   "repository": {
     "type": "git",
@@ -28,6 +28,8 @@
     ]
   },
   "dependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^4.0.1",
     "nodejs-websocket": "^1.7.1",
     "ws": "^3.0.0"
   },

@@ -6,15 +6,15 @@ module.exports = class RoomController extends events.EventEmitter {
     constructor() {
         super()
         this.rooms = []
-        this.lastIndex = 0 // Unique id for rooms
-        this.createRoom('--system--', 'Welcome hall')
+        this.lastId = 0 // Unique id for rooms
+        this.createRoom('--system--', 'Welcome hall', 'lightblue')
     }
 
-    createRoom(userId, roomname) {
-        this.lastIndex++
-        this.rooms.push(new Room(this.lastIndex, userId, roomname))
-        // console.log(`Room created by user: ${userId} with the name: ${roomname}`)
-        return this.lastIndex
+    createRoom(userId, roomName, backgroundColor) {
+        this.lastId++
+        this.rooms.push(new Room(this.lastId, userId, roomName, backgroundColor))
+        // console.log(`Room created by user: ${userId} with the name: ${roomName}`)
+        return this.lastId
     }
 
     transferUser(userId, sourceRoomId, destinationRoomId) {
@@ -37,9 +37,9 @@ module.exports = class RoomController extends events.EventEmitter {
         return this.transferUser(userId, currentRoomId, destinationRoomId)
     }
 
-    addUser(userId, roomId) {
+    addUser(userId, roomId, force = false) {
         var currentRoomId = this.findCurrentRoom(userId)
-        if (currentRoomId === -1) {
+        if (currentRoomId === -1 || force) {
             var room = this.getRoomById(roomId)
             if (room === undefined) {
                 console.error('Room not found, cannot add the user to this room')
@@ -88,21 +88,30 @@ module.exports = class RoomController extends events.EventEmitter {
         return -1
     }
 
-    deleteRoom(id) {
-        if (id === 1) {
+    deleteRoom(userId, roomId) {
+        if (roomId === 1) {
             // console.error(`Cannot delete the main room`)
             return false
         }
 
-        const room = this.getRoomById(id)
+        const room = this.getRoomById(roomId)
         if (room === undefined) return false
+        if (room.creatorId !== userId) return false
+
         // If there are users in this room, move them to the main room
-        room.users.forEach(userId => this.transferUser(userId, id, 1))
+        // room.users.forEach(userId => this.transferUser(userId, roomId, 1))
+        room.users.forEach(userId => {
+            // Force the user to the main room
+            this.addUser(userId, 1, true)
+            this.emit('userForcedOutOfDeletedRoomEvent', userId)
+        })
 
-        let index = this.getRoomIndex(id)
+        // Remove the room from the list:
+        let index = this.getRoomIndex(roomId)
         this.rooms.splice(index, 1)
-        // console.log(`Room removed, number of rooms left: ${this.rooms.length}`)
 
+        // console.log(`Room removed, number of rooms left: ${this.rooms.length}`)
+        this.emit('roomDeletedEvent', roomId)
         return true
 
     }
@@ -119,13 +128,13 @@ module.exports = class RoomController extends events.EventEmitter {
         return this.getRoomIndex(id) !== -1
     }
 
-    changeProp(id, prop, value) {
+/*    changeProp(id, prop, value) {
         var r = this.getRoomById(id)
         if (r) r[prop] = value
-    }
+    }*/
 
     filterByUser(userId) {
-        return this.rooms.filter(room => room.creatorid === userId ? true : false)
+        return this.rooms.filter(room => room.creatorId === userId ? true : false)
     }
 
 }
